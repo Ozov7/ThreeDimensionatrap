@@ -27,6 +27,17 @@ contract SecurityResponder {
         uint256 timestamp
     );
     
+    // ========== NEW: Cross-Vector Alert Event ==========
+    event CrossVectorAlert(
+        address indexed primaryTarget,
+        string attackType,
+        uint256 startBlock,
+        uint256 endBlock,
+        address[] involvedAddresses,
+        uint256 estimatedTotalProfit,
+        string[] triggeredTraps
+    );
+    
     function handleMEVAlert(bytes calldata alertData) external {
         (
             address victim,
@@ -62,5 +73,57 @@ contract SecurityResponder {
         ) = abi.decode(alertData, (address, uint256, uint256, uint256, uint256, uint256));
         
         emit OracleAlert(oracleSource, reportedPrice, referencePrice, deviationBps, volume, timestamp);
+    }
+    
+    // ========== NEW: Cross-Vector Alert Handler ==========
+    function handleCrossVectorAlert(bytes calldata alertData) external {
+        (
+            address primaryTarget,
+            string memory attackType,
+            uint256 startBlock,
+            uint256 endBlock,
+            address[] memory involvedAddresses,
+            uint256 estimatedTotalProfit,
+            string[] memory triggeredTraps
+        ) = abi.decode(
+            alertData, 
+            (address, string, uint256, uint256, address[], uint256, string[])
+        );
+        
+        emit CrossVectorAlert(
+            primaryTarget,
+            attackType,
+            startBlock,
+            endBlock,
+            involvedAddresses,
+            estimatedTotalProfit,
+            triggeredTraps
+        );
+        
+        // ========== ADDITIONAL MITIGATION LOGIC ==========
+        
+        // Critical: Full spectrum attack - all 3 vectors
+        if (keccak256(bytes(attackType)) == keccak256(bytes("FULL_SPECTRUM_ATTACK"))) {
+            // Highest severity - immediate action required
+            // In production, this would call pause functions on protocols
+        }
+        
+        // MEV + Oracle combined attack
+        if (keccak256(bytes(attackType)) == keccak256(bytes("MEV_WITH_ORACLE_MANIPULATION"))) {
+            // Pause affected trading pools
+            // Switch to fallback oracle
+        }
+        
+        // Governance + Oracle combined attack
+        if (keccak256(bytes(attackType)) == keccak256(bytes("GOVERNANCE_ORACLE_TAKEOVER"))) {
+            // Delay suspicious proposals
+            // Alert DAO multisig
+        }
+        
+        // MEV + Governance coordinated attack
+        if (keccak256(bytes(attackType)) == keccak256(bytes("MEV_GOVERNANCE_COORDINATED"))) {
+            // Freeze affected addresses
+            // Pause trading in governance tokens
+        }
     }
 }
