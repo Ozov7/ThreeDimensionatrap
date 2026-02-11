@@ -1,0 +1,34 @@
+
+# Drosera Security Traps Configuration
+# =====================================
+
+# Global settings
+eth_chain_id = 1  # Ethereum Mainnet
+
+# MEV Sandwich Detector Trap
+[trap.mev_sandwich]
+address = "0x0000000000000000000000000000000000000000"  # Will be replaced after deployment
+response_contract = "0x0000000000000000000000000000000000000000"  # Will be replaced
+response_function = "handleMEVAlert"
+cooldown_period_blocks = 10
+min_number_of_operators = 1
+max_number_of_operators = 3
+block_sample_size = 3
+private_trap = false
+whitelist = []
+
+# Governance Attack Monitor Trap
+[trap.governance_monitor]
+address = "0x0000000000000000000000000000000000000000"  # Will be replaced
+response_contract = "0x0000000000000000000000000000000000000000"  # Will be replaced
+response_function = "handleGovernanceAlert"
+cooldown_period_blocks = 20
+block_sample_size = 10
+
+# Oracle Manipulation Detector Trap
+[trap.oracle_detector]
+address = "0x0000000000000000000000000000000000000000"  # Will be replaced
+response_contract = "0x0000000000000000000000000000000000000000"  # Will be replaced
+response_function = "handleOracleAlert"
+cooldown_period_blocks = 5
+block_sample_size = 2
