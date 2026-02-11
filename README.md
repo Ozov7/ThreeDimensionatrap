@@ -143,6 +143,21 @@ function handleOracleAlert(bytes calldata alertData) external {
 
 ---
 
+## 🔗 Unified Orchestrator System
+
+All three security traps feed into a **Security Orchestrator** that:
+
+* Correlates events across MEV, Governance, and Oracle vectors
+* Detects sophisticated multi-stage attacks that individual traps would miss
+* Presents a single interface to register with Drosera Network
+* Generates cross-vector alerts with attack classification
+
+**Deployment Flow:**
+1. Deploy individual traps (sensors)
+2. Deploy unified orchestrator (brain)
+3. Register ONLY the orchestrator with Drosera
+4. Orchestrator calls individual traps and correlates results
+
 ## Configuration
 
 ### Drosera Configuration (`drosera.toml`)
