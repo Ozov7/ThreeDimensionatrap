@@ -1,0 +1,48 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+      
+      - name: Setup Foundry
+        run: |
+          forge --version
+          cast --version
+      
+      - name: Install OpenZeppelin
+        run: forge install openzeppelin/openzeppelin-contracts
+      
+      - name: Install Forge Std
+        run: forge install foundry-rs/forge-std
+      
+      - name: Clean build cache
+        run: forge clean
+      
+      - name: Build contracts
+        run: forge build --force
+      
+      - name: Run tests
+        run: forge test -vvv
+      
+      - name: Auto-format code
+        run: forge fmt
+      
+      - name: Create gas snapshot
+        run: forge snapshot
+      
+      - name: Upload gas report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gas-report
+          path: .gas-snapshot
