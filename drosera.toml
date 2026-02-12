@@ -1,13 +1,14 @@
-# Drosera Security Traps Configuration
-# Register ONLY the orchestrator, not individual traps
+# Drosera Configuration - MAINNET DEPLOYMENT
 
-[trap.security_orchestrator]
-address = "0x..."  # Replace with orchestrator address after deployment
-response_contract = "0x..."  # Replace with responder address after deployment
-response_function = "handleCrossVectorAlert"
+[settings]
+eth_chain_id = 1  # Ethereum Mainnet
+drosera_rpc = "https://relay.drosera.io"
+
+[traps.security_orchestrator]
+address = "0x..."  # Deployed orchestrator address
+response_contract = "0x..."  # Deployed responder address
+response_function = "handleCrossVectorAlert(bytes)"
 cooldown_period_blocks = 10
 min_number_of_operators = 1
 max_number_of_operators = 3
-block_sample_size = 5
-private_trap = false
-whitelist = []
+block_sample_size = 2
