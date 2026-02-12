@@ -2,6 +2,16 @@
 pragma solidity ^0.8.20;
 
 contract SecurityResponder {
+    // ========== STATE ==========
+    address public immutable orchestrator;
+    address public owner;
+    bool public paused;
+    
+    // ========== EVENTS ==========
+    event OrchestratorUpdated(address indexed newOrchestrator);
+    event Paused(address indexed by);
+    event Unpaused(address indexed by);
+    
     event MEVAlert(
         address indexed victim,
         address indexed attacker,
@@ -13,7 +23,7 @@ contract SecurityResponder {
     event GovernanceAlert(
         uint256 indexed proposalId,
         address indexed suspiciousAddress,
-        string alertType,
+        string attackType,
         uint256 votingPowerChange,
         uint256 timestamp
     );
@@ -24,21 +34,56 @@ contract SecurityResponder {
         uint256 referencePrice,
         uint256 deviationBps,
         uint256 volume,
-        uint256 timestamp
+        uint256 timestamp,
+        bool isStale
     );
     
-    // ========== NEW: Cross-Vector Alert Event ==========
     event CrossVectorAlert(
-        address indexed primaryTarget,
         string attackType,
-        uint256 startBlock,
-        uint256 endBlock,
-        address[] involvedAddresses,
-        uint256 estimatedTotalProfit,
-        string[] triggeredTraps
+        uint256 blockNumber,
+        bytes[] alertData
     );
     
-    function handleMEVAlert(bytes calldata alertData) external {
+    // ========== MODIFIERS ==========
+    modifier onlyOrchestrator() {
+        require(msg.sender == orchestrator, "Only orchestrator can call");
+        _;
+    }
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
+    
+    modifier whenNotPaused() {
+        require(!paused, "Responder paused");
+        _;
+    }
+    
+    // ========== CONSTRUCTOR ==========
+    constructor(address _orchestrator) {
+        require(_orchestrator != address(0), "Invalid orchestrator");
+        orchestrator = _orchestrator;
+        owner = msg.sender;
+    }
+    
+    // ========== OWNER FUNCTIONS ==========
+    function pause() external onlyOwner {
+        paused = true;
+        emit Paused(msg.sender);
+    }
+    
+    function unpause() external onlyOwner {
+        paused = false;
+        emit Unpaused(msg.sender);
+    }
+    
+    // ========== RESPONSE FUNCTIONS ==========
+    function handleMEVAlert(bytes calldata alertData) 
+        external 
+        onlyOrchestrator 
+        whenNotPaused 
+    {
         (
             address victim,
             address attacker,
@@ -50,80 +95,51 @@ contract SecurityResponder {
         emit MEVAlert(victim, attacker, profitEstimate, priceImpact, blockNumber);
     }
     
-    function handleGovernanceAlert(bytes calldata alertData) external {
+    function handleGovernanceAlert(bytes calldata alertData) 
+        external 
+        onlyOrchestrator 
+        whenNotPaused 
+    {
         (
             uint256 proposalId,
             address suspiciousAddress,
-            string memory alertType,
+            string memory attackType,
             uint256 votingPowerChange,
             uint256 timestamp
         ) = abi.decode(alertData, (uint256, address, string, uint256, uint256));
         
-        emit GovernanceAlert(proposalId, suspiciousAddress, alertType, votingPowerChange, timestamp);
+        emit GovernanceAlert(proposalId, suspiciousAddress, attackType, votingPowerChange, timestamp);
     }
     
-    function handleOracleAlert(bytes calldata alertData) external {
+    function handleOracleAlert(bytes calldata alertData) 
+        external 
+        onlyOrchestrator 
+        whenNotPaused 
+    {
         (
             address oracleSource,
             uint256 reportedPrice,
             uint256 referencePrice,
             uint256 deviationBps,
             uint256 volume,
-            uint256 timestamp
-        ) = abi.decode(alertData, (address, uint256, uint256, uint256, uint256, uint256));
+            uint256 timestamp,
+            bool isStale
+        ) = abi.decode(alertData, (address, uint256, uint256, uint256, uint256, uint256, bool));
         
-        emit OracleAlert(oracleSource, reportedPrice, referencePrice, deviationBps, volume, timestamp);
+        emit OracleAlert(oracleSource, reportedPrice, referencePrice, deviationBps, volume, timestamp, isStale);
     }
     
-    // ========== NEW: Cross-Vector Alert Handler ==========
-    function handleCrossVectorAlert(bytes calldata alertData) external {
+    function handleCrossVectorAlert(bytes calldata alertData) 
+        external 
+        onlyOrchestrator 
+        whenNotPaused 
+    {
         (
-            address primaryTarget,
             string memory attackType,
-            uint256 startBlock,
-            uint256 endBlock,
-            address[] memory involvedAddresses,
-            uint256 estimatedTotalProfit,
-            string[] memory triggeredTraps
-        ) = abi.decode(
-            alertData, 
-            (address, string, uint256, uint256, address[], uint256, string[])
-        );
+            uint256 blockNumber,
+            bytes[] memory individualAlerts
+        ) = abi.decode(alertData, (string, uint256, bytes[]));
         
-        emit CrossVectorAlert(
-            primaryTarget,
-            attackType,
-            startBlock,
-            endBlock,
-            involvedAddresses,
-            estimatedTotalProfit,
-            triggeredTraps
-        );
-        
-        // ========== ADDITIONAL MITIGATION LOGIC ==========
-        
-        // Critical: Full spectrum attack - all 3 vectors
-        if (keccak256(bytes(attackType)) == keccak256(bytes("FULL_SPECTRUM_ATTACK"))) {
-            // Highest severity - immediate action required
-            // In production, this would call pause functions on protocols
-        }
-        
-        // MEV + Oracle combined attack
-        if (keccak256(bytes(attackType)) == keccak256(bytes("MEV_WITH_ORACLE_MANIPULATION"))) {
-            // Pause affected trading pools
-            // Switch to fallback oracle
-        }
-        
-        // Governance + Oracle combined attack
-        if (keccak256(bytes(attackType)) == keccak256(bytes("GOVERNANCE_ORACLE_TAKEOVER"))) {
-            // Delay suspicious proposals
-            // Alert DAO multisig
-        }
-        
-        // MEV + Governance coordinated attack
-        if (keccak256(bytes(attackType)) == keccak256(bytes("MEV_GOVERNANCE_COORDINATED"))) {
-            // Freeze affected addresses
-            // Pause trading in governance tokens
-        }
+        emit CrossVectorAlert(attackType, blockNumber, individualAlerts);
     }
 }
