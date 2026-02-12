@@ -25,7 +25,7 @@ contract MEVSandwichDetector is Trap {
     // ========== CONSTRUCTOR ==========
     constructor() {
         owner = msg.sender;
-        // ✅ CORRECT: Add event filter with real Uniswap V3 Swap topic
+        // CORRECT: Add event filter with real Uniswap V3 Swap topic
         _addEventFilter(
             UNISWAP_V3_POOL,
             keccak256("Swap(address,address,int256,int256,uint160,uint128,int24)")
@@ -43,7 +43,7 @@ contract MEVSandwichDetector is Trap {
     
     // ========== DROSERA TRAP FUNCTIONS ==========
     function collect() external view override returns (bytes memory) {
-        // ✅ CORRECT: Get REAL logs from Drosera
+        // CORRECT: Get REAL logs from Drosera
         Trap.Log[] memory logs = getFilteredLogs();
         
         // Store swaps from this block
@@ -51,14 +51,14 @@ contract MEVSandwichDetector is Trap {
         uint256 swapCount = 0;
         
         for (uint256 i = 0; i < logs.length; i++) {
-            // ✅ CORRECT: Uniswap V3 Swap event has 3 topics
+            // CORRECT: Uniswap V3 Swap event has 3 topics
             // topics[0] = event signature
             // topics[1] = sender (indexed)
             // topics[2] = recipient (indexed)
             if (logs[i].topics.length < 3) continue;
             if (logs[i].topics[0] != getSwapTopic()) continue;
             
-            // ✅ CORRECT: Decode Uniswap V3 Swap data
+            // CORRECT: Decode Uniswap V3 Swap data
             // Data contains: amount0, amount1, sqrtPriceX96, liquidity, tick
             (int256 amount0, int256 amount1, uint160 sqrtPriceX96, uint128 liquidity, int24 tick) = 
                 abi.decode(logs[i].data, (int256, int256, uint160, uint128, int24));
